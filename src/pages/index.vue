@@ -39,6 +39,9 @@
             <div class="mt-4">
               <strong>Транскрибировано:</strong> {{ transcripted ? 'Да' : 'Нет' }}
             </div>
+            <div class="mt-4">
+              <strong>Шум:</strong> {{ isNoise ? 'Да' : 'Нет' }}
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -74,7 +77,7 @@ const userLanguage = ref('ru');
 const transcripted = ref(false);
 const languageProbability = ref(0);
 const audioId = ref('');
-
+const isNoise = ref(false)
 const languages = [
   'ru',
   'pl',
@@ -115,6 +118,7 @@ const fetchRandomAudio = async () => {
     const { data: randomData } = await axios.get('http://demogram.ru:8000/api/audio/random');
     audioId.value = randomData.id;
     transcripted.value = randomData.transcripted;
+    isNoise.value = randomData.is_noise
     audioSrc.value = `http://demogram.ru:8000/api/audio/${audioId.value}?_=${Date.now()}`;
     const { data: transcript } = await axios.get(`http://demogram.ru:8000/api/audio/${audioId.value}/transcript`);
 
@@ -131,6 +135,7 @@ const fetchRandomAudio = async () => {
       } else {
         neuralLanguage.value = 'unknown';
       }
+
       userInput.value = neuralOutput.value;
       languageProbability.value = firstEntry.language_prob;
     }
