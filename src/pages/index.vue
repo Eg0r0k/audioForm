@@ -91,7 +91,22 @@ const resetAudio = () => {
   }
 };
 
+const resetForm = () =>{
+  audioSrc.value = '';
+ neuralOutput.value = '';
+ userInput.value = '';
+ neuralLanguage.value = 'ru';
+ decision.value = 'decision'
+ transcripted.value = false
+ isNoise.value = false
+ languageProbability.value = 0
+ audioId.value = ''
+}
+
+
+
 const fetchRandomAudio = async () => {
+  resetForm()
   try {
     const { data: randomData } = await axios.get('http://demogram.ru:8000/api/audio/random');
     audioId.value = randomData.id;
@@ -116,8 +131,9 @@ const fetchRandomAudio = async () => {
   }
 };
 
+
 const handleSkip = async () => {
-  audioSrc.value = '';
+  resetForm()
   await fetchRandomAudio();
 };
 
