@@ -7,12 +7,12 @@
     Space+Backspace - Это шум
     <v-card class="mb-4">
 
-      <v-card-title @click="copy(audioId)">Аудио файл
+      <v-card-title @click="copy(audioId)" class="cursor-pointer">Аудио файл
 
 
         <small>
           {{ audioId }}
-          <span class="text-green-lighten-1 ml-2" v-if="copied">
+          <span class="text-green-lighten-1 ml-2 " v-if="copied">
             Скопированно
           </span>
         </small>
@@ -70,46 +70,12 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
 import { useMagicKeys, whenever, useActiveElement, useClipboard } from '@vueuse/core';
+import { fetchRandomAudio, fetchTranscript, submitManualData, type ManualPayload } from '@/api/audio';
 
 const BASE_URL = 'http://demogram.ru:8000'
 
 
-const axiosInstance = axios.create({
-  baseURL: BASE_URL
-});
-interface RandomAudioData {
-  id: string;
-  start_time: string;
-  end_time: string | null;
-  actor: {
-    id: string;
-    name: string;
-  };
-  transcripted: boolean;
-  is_noise: boolean;
-}
-
-interface TranscriptEntry {
-  id: string;
-  text: string;
-  start_time: string;
-  end_time: string;
-  actor: {
-    id: string;
-    name: string;
-  };
-  language: Language;
-  language_prob: number;
-}
-
-interface ManualPayload {
-  audio_file_id: string;
-  text: string;
-  language: Language;
-  is_noise: boolean;
-}
 
 const languages = ['ru', 'pl', 'en', 'es', 'fr', 'unknown'] as const;
 type Language = "ru" | "pl" | "en" | "es" | "fr" | "unknown";
@@ -150,15 +116,15 @@ const resetForm = (): void => {
   audioId.value = '';
 };
 
-const fetchRandomAudio = async (): Promise<void> => {
+const fetchRandomData = async (): Promise<void> => {
   resetForm();
   try {
-    const { data: randomData } = await axiosInstance.get<RandomAudioData>('/api/audio/random');
+    const randomData = await fetchRandomAudio();
     audioId.value = randomData.id;
     transcripted.value = randomData.transcripted;
     isNoise.value = randomData.is_noise;
     audioSrc.value = `${BASE_URL}/api/audio/${audioId.value}?_=${Date.now()}`;
-    const { data: transcript } = await axiosInstance.get<TranscriptEntry[]>(`/api/audio/${audioId.value}/transcript`);
+    const transcript = await fetchTranscript(audioId.value);
 
 
     if (transcript && transcript.length > 0) {
@@ -185,7 +151,7 @@ const fetchRandomAudio = async (): Promise<void> => {
 
 const handleSkip = async (): Promise<void> => {
   resetForm();
-  await fetchRandomAudio();
+  await fetchRandomData();
 };
 
 const handleSubmit = async (): Promise<void> => {
@@ -197,8 +163,8 @@ const handleSubmit = async (): Promise<void> => {
   };
 
   try {
-    await axiosInstance.post<ManualPayload>('/api/manual', payload);
-    await fetchRandomAudio();
+    await submitManualData(payload);
+    await fetchRandomData();
   } catch (error) {
     console.error('Ошибка отправки данных:', error);
   }
@@ -213,8 +179,8 @@ const handleNoise = async (): Promise<void> => {
   };
 
   try {
-    await axios.post<ManualPayload>('http://demogram.ru:8000/api/manual', payload);
-    await fetchRandomAudio();
+    await submitManualData(payload);
+    await fetchRandomData();
   } catch (error) {
     console.error('Ошибка отправки данных:', error);
   }
@@ -231,6 +197,6 @@ whenever(() => keys['Ctrl+Enter'].value && !isInputFocused.value, () => {
 whenever(() => keys['Ctrl+Backspace'].value && !isInputFocused.value, handleSkip);
 
 onMounted(() => {
-  fetchRandomAudio();
+  fetchRandomData();
 });
 </script>
